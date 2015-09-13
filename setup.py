@@ -16,7 +16,7 @@ setup(
     scripts=['spx.py'],
     url='https://bitbucket.org/tback/spx',
     license='MIT',
-    author='Till Backhaus <till@backha.us>',
+    author='Till Backhaus',
     author_email='till@backha.us',
     description='Unofficial Python Library for Edimax Smartplugs SP-2101W and SP-1101W'
 )
