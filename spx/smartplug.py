@@ -1,14 +1,11 @@
 import datetime
 import logging
-import os
 import re
 import textwrap
 import requests
 import sys
 from apscheduler.schedulers.blocking import BlockingScheduler
 from xml.dom.minidom import parseString
-from pkg_resources import resource_filename
-from six.moves import configparser
 
 
 log = logging.getLogger(__name__)
@@ -19,15 +16,11 @@ def un_camel(s):
                   r'_\1', s).lower()
 
 
-class PlugException(Exception):
+class SmartplugException(Exception):
     pass
 
 
-class PlugNotFound(PlugException):
-    pass
-
-
-class PlugCommandFailed(PlugException):
+class SmartplugCommandFailed(SmartplugException):
     pass
 
 
@@ -57,32 +50,19 @@ class Smartplug(object):
             </NOW_POWER>
         </CMD>'''))
 
-    def __init__(self, plug_id_or_host, username=None, password=None):
-        config = self.load(plug_id_or_host)
-        self.host = config.get('host', plug_id_or_host)
-        self.username = username or config['username']
-        self.password = password or config['password']
+    def __init__(self, host, username='admin', password='1234'):
+        self.host = host
+        self.username = username
+        self.password = password
 
         self.url = self.URL.format(p=self)
-
-    def load(self, plug_id):
-        config = configparser.ConfigParser()
-        config.read([
-            resource_filename("spx", "settings.ini"),
-            os.path.expanduser('~/.spx')
-        ])
-
-        try:
-            config[plug_id]
-        except KeyError as e:
-            return config['DEFAULT']
 
     def send_command(self, command):
         log.debug(command)
         response = requests.post(self.url, data=command)
 
         if response.status_code != 200:
-            raise(PlugCommandFailed(response.status_code, response.content))
+            raise(SmartplugCommandFailed(response.status_code, response.content))
 
         log.debug(response.content)
         return response.content
@@ -107,9 +87,9 @@ class Smartplug(object):
         return result
 
     def run_monitor(self):
-        print('{timestamp} {wattage}'.format(
+        print('{timestamp} {q.power}'.format(
             timestamp=datetime.datetime.now().strftime(self.DATETIME_FORMAT),
-            wattage=self.query()['power']
+            q=self.query()
         ))
         sys.stdout.flush()
 
@@ -131,17 +111,17 @@ class Smartplug(object):
             sys.exit(0)
 
 
-def on(plug_id_or_host, username=None, password=None):
-    return Smartplug(plug_id_or_host, username=username, password=password).on()
+def on(host, username=None, password=None):
+    return Smartplug(host, username=username, password=password).on()
 
 
-def off(plug_id_or_host, username=None, password=None):
-    return Smartplug(plug_id_or_host, username=username, password=password).off()
+def off(host, username=None, password=None):
+    return Smartplug(host, username=username, password=password).off()
 
 
-def query(plug_id_or_host, username=None, password=None):
-    return Smartplug(plug_id_or_host, username=username, password=password).query()
+def query(host, username=None, password=None):
+    return Smartplug(host, username=username, password=password).query()
 
 
-def monitor(plug_id_or_host, repeat=None, username=None, password=None):
-    return Smartplug(plug_id_or_host, username=username, password=password).monitor(repeat)
+def monitor(host, repeat=None, username=None, password=None):
+    return Smartplug(host, username=username, password=password).monitor(repeat)

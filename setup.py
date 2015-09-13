@@ -3,17 +3,17 @@ from setuptools import find_packages
 
 setup(
     name='spx',
-    version='0.1',
+    version='0.1.2',
     install_requires=[
         'requests',
         'apscheduler',
-        'six',
     ],
     packages=find_packages(),
-    package_data={
-        'spx': ['*.ini']
+    entry_points={
+        'console_scripts': [
+            'spx-tool = spx.tool:main',
+        ]
     },
-    scripts=['spx.py'],
     url='https://bitbucket.org/tback/spx',
     license='MIT',
     author='Till Backhaus',
