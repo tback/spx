@@ -1,4 +1,5 @@
 from distutils.core import setup
+from setuptools import find_packages
 
 setup(
     name='spx',
@@ -8,7 +9,11 @@ setup(
         'apscheduler',
         'six',
     ],
-    packages=[''],
+    packages=find_packages(),
+    package_data={
+        'spx': ['*.ini']
+    },
+    scripts=['spx.py'],
     url='https://bitbucket.org/tback/spx',
     license='MIT',
     author='Till Backhaus <till@backha.us>',
