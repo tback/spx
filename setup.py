@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='spx',
-    version='0.1.2',
+    version='0.1.3',
     install_requires=[
         'requests',
         'apscheduler',

@@ -1,12 +1,13 @@
+# -*- coding: utf-8 -*-
 import datetime
 import logging
 import re
 import textwrap
-import requests
 import sys
-from apscheduler.schedulers.blocking import BlockingScheduler
 from xml.dom.minidom import parseString
 
+import requests
+from apscheduler.schedulers.blocking import BlockingScheduler
 
 log = logging.getLogger(__name__)
 
@@ -34,21 +35,24 @@ class Smartplug(object):
         <SMARTPLUG id="edimax">{command}
         </SMARTPLUG>''')
 
-    SWITCH_MESSAGE = MESSAGE.format(command=textwrap.dedent('''
+    SET_STATE_MESSAGE = MESSAGE.format(command=textwrap.dedent('''
         <CMD id="setup">
             <Device.System.Power.State>{state}</Device.System.Power.State>
         </CMD>'''))
 
-    QUERY_MESSAGE_STATE = MESSAGE.format(command=textwrap.dedent('''
+    GET_STATE_MESSAGE = MESSAGE.format(command=textwrap.dedent('''
         <CMD id="get">
             <Device.System.Power.State></Device.System.Power.State>
         </CMD>'''))
 
-    QUERY_MESSAGE = MESSAGE.format(command=textwrap.dedent('''
+    GET_USAGE_MESSAGE = MESSAGE.format(command=textwrap.dedent('''
         <CMD id="get">
             <NOW_POWER>
             </NOW_POWER>
         </CMD>'''))
+
+    BOOLEAN_STATES = {'1': True, 'yes': True, 'true': True, 'on': True,
+                      '0': False, 'no': False, 'false': False, 'off': False}
 
     def __init__(self, host, username='admin', password='1234'):
         self.host = host
@@ -57,24 +61,45 @@ class Smartplug(object):
 
         self.url = self.URL.format(p=self)
 
-    def send_command(self, command):
+    def _convert_to_boolean(self, value):
+        """Return a boolean value translating from other types if necessary.
+        """
+        if type(value) is bool:
+            return value
+        if value.lower() not in self.BOOLEAN_STATES:
+            raise ValueError('Not a boolean: %s' % value)
+        return self.BOOLEAN_STATES[value.lower()]
+
+    def _send_command(self, command):
         log.debug(command)
         response = requests.post(self.url, data=command)
 
         if response.status_code != 200:
-            raise(SmartplugCommandFailed(response.status_code, response.content))
+            raise (
+            SmartplugCommandFailed(response.status_code, response.content))
 
         log.debug(response.content)
         return response.content
 
+    def get_state(self):
+        self._send_command(self.GET_STATE_MESSAGE)
+
+    def set_state(self, state):
+        self._send_command(self.SET_STATE_MESSAGE.format(
+            state='ON' if self._convert_to_boolean(state) else 'OFF'
+        ))
+
+    def switch(self, state):
+        return self.set_state(state)
+
     def on(self):
-        self.send_command(self.SWITCH_MESSAGE.format(state='ON'))
+        self.set_state(True)
 
     def off(self):
-        self.send_command(self.SWITCH_MESSAGE.format(state='OFF'))
+        self.set_state(False)
 
-    def query(self):
-        response = self.send_command(self.QUERY_MESSAGE)
+    def get_usage(self):
+        response = self._send_command(self.GET_USAGE_MESSAGE)
         dom = parseString(response)
         dom_data = dom.getElementsByTagName('NOW_POWER')
         result = {}
@@ -89,7 +114,7 @@ class Smartplug(object):
     def run_monitor(self):
         print('{timestamp} {q.power}'.format(
             timestamp=datetime.datetime.now().strftime(self.DATETIME_FORMAT),
-            q=self.query()
+            q=self.get_usage()
         ))
         sys.stdout.flush()
 
@@ -119,9 +144,23 @@ def off(host, username=None, password=None):
     return Smartplug(host, username=username, password=password).off()
 
 
-def query(host, username=None, password=None):
-    return Smartplug(host, username=username, password=password).query()
+def get_state(host, username=None, password=None):
+    return Smartplug(host, username=username, password=password).get_state()
 
 
-def monitor(host, repeat=None, username=None, password=None):
-    return Smartplug(host, username=username, password=password).monitor(repeat)
+def set_state(host, state, username=None, password=None):
+    return Smartplug(host, username=username, password=password).set_state(
+        state)
+
+
+def switch(host, state, username=None, password=None):
+    return Smartplug(host, username=username, password=password).switch(state)
+
+
+def get_usage(host, username=None, password=None):
+    return Smartplug(host, username=username, password=password).get_usage()
+
+
+def monitor(host, interval=None, username=None, password=None):
+    return Smartplug(host, username=username, password=password).monitor(
+        interval)
