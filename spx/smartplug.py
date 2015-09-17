@@ -102,7 +102,9 @@ class Smartplug(object):
         response = self._send_command(self.GET_USAGE_MESSAGE)
         dom = parseString(response)
         dom_data = dom.getElementsByTagName('NOW_POWER')
-        result = {}
+        result = {
+            't': datetime.datetime.now(),
+        }
         for node in dom_data[0].childNodes:
             if node.nodeType != node.ELEMENT_NODE:
                 continue
