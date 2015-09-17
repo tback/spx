@@ -1,6 +1,12 @@
 # SPX
 
-Unofficial Edimax Smartplug Libary.
+Unofficial Edimax Smartplug Libary. Control SP-1101W and SP-2101W from Python.
+
+## Install
+spx is available on [pypi](https://pypi.python.org/pypi/spx). Install it using pip:
+```
+pip install spx
+```
 
 
 
