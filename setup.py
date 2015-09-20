@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 setup(
     name='spx',
-    version='0.1.3',
+    version='0.2.0',
     install_requires=[
         'requests',
         'apscheduler',
@@ -11,7 +11,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'spx-tool = spx.tool:main',
+            'spx-tool = spx.tool:SPXTool.run',
         ]
     },
     url='https://bitbucket.org/tback/spx',
