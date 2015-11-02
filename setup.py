@@ -14,7 +14,7 @@ setup(
             'spx-tool = spx.tool:SPXTool.run',
         ]
     },
-    url='https://bitbucket.org/tback/spx',
+    url='https://github.com/tback/spx',
     license='MIT',
     author='Till Backhaus',
     author_email='till@backha.us',
