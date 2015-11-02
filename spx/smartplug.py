@@ -28,7 +28,6 @@ class Smartplug(object):
     DEFAULT_PASSWORD = '1234'
     DATETIME_FORMAT = '%Y%m%d%H%M%S'
 
-
     URL = 'http://{p.username}:{p.password}@{p.host}:10000/smartplug.cgi'
 
     MESSAGE = textwrap.dedent('''
@@ -85,8 +84,11 @@ class Smartplug(object):
         return response.content
 
     def get_state(self):
-        self._send_command(self.GET_STATE_MESSAGE)
-        raise NotImplemented()
+        response = self._send_command(self.GET_STATE_MESSAGE)
+        dom = parseString(response)
+        dom_data = dom.getElementsByTagName('Device.System.Power.State')
+        return dom_data[0].firstChild.nodeValue.strip()
+
 
     def set_state(self, state):
         self._send_command(self.SET_STATE_MESSAGE.format(

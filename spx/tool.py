@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-import datetime
+from collections import deque
 import sys
 import argparse
 import logging
 from apscheduler.schedulers.blocking import BlockingScheduler
+import time
 
 import spx
 
@@ -14,7 +15,7 @@ class SPXTool(object):
 
     FORMATS = {
         'minimal': '{t:' + DATETIME_FORMAT + '} {power}',
-        'default': 't:' + DATETIME_FORMAT +'} {current} {power} {last_toggle_time:' + DATETIME_FORMAT + '}',
+        'default': '{t:' + DATETIME_FORMAT +'} {current} {power} {last_toggle_time:' + DATETIME_FORMAT + '}',
     }
 
     @staticmethod
@@ -24,29 +25,44 @@ class SPXTool(object):
     def __init__(self):
         self.args = None
         self.parse_args()
+        self.history = None
         self.smartplug = spx.Smartplug(self.args.host,
                                        self.args.username, self.args.password)
 
     def __call__(self):
         self.args.func()
 
-    def run_monitor(self):
+    def run_monitor(self, control, interval, threshould, timeframe):
         usage = self.smartplug.get_usage()
-        print('{t:' + self.DATETIME_FORMAT + '} {power}'.format(
-            **usage
-        ), flush=True)
+        print(self.FORMATS['default'].format(**usage), flush=True)
+        if control:
+            if self.history is None:
+                self.history = deque(maxlen=int(timeframe/interval))
+            self.history.append(usage)
+            if (len(self.history) == self.history.maxlen
+                and max(self.history, key=lambda x: x['power'])['power'] < threshould):
+                print('POWERCYCLE', flush=True)
+                self.history.clear()
+                self.smartplug.off()
+                time.sleep(3)
+                self.smartplug.on()
 
-    def monitor(self, interval=None):
+
+
+    def monitor(self, interval=None, control=None, control_threshould=None, control_timeframe=None):
         if interval is None:
             interval = self.DEFAULT_INTERVAL
         if type(interval) is str:
             interval = int(interval)
         scheduler = BlockingScheduler()
-        self.run_monitor()
+
+        self.run_monitor(control, interval, control_threshould, control_timeframe)
         if interval < 1:
             return
 
-        scheduler.add_job(self.run_monitor, 'interval', seconds=int(interval))
+        scheduler.add_job(lambda: self.run_monitor(control, interval, control_threshould, control_timeframe),
+                          'interval',
+                          seconds=int(interval))
 
         try:
             scheduler.start()
@@ -88,7 +104,7 @@ class SPXTool(object):
             'get_state', parents=[common_parser],
             help='Get state of Smartplug (on or off)'
         )
-        get_state_command.set_defaults(func=lambda: self.smartplug.get_state())
+        get_state_command.set_defaults(func=lambda: print(self.smartplug.get_state()))
 
         set_state_command = commands.add_parser(
             'set_state', parents=[common_parser],
@@ -130,10 +146,22 @@ class SPXTool(object):
         monitor_command.add_argument(
             '-f', '--format', default=self.FORMATS['default'],
         )
-
-        monitor_command.set_defaults(
-            func=lambda: self.monitor(self.args.interval)
+        monitor_command.add_argument(
+            '-c', '--control', action='store_true',
+            help='power cycle when consumption never exceeded a threshould for a time frame'
         )
+        monitor_command.add_argument(
+            '--control-timeframe', type=int, default=3600,
+            help='control timeframe in seconds. Default: 3600s (1h)'
+        )
+        monitor_command.add_argument(
+            '--control-threshould', type=int, default=50,
+            help='control threhould in watt. Default: 50W'
+        )
+        monitor_command.set_defaults(
+            func=lambda: self.monitor(self.args.interval, self.args.control, self.args.control_threshould, self.args.control_timeframe)
+        )
+
         self.args = parser.parse_args()
 
         logging.basicConfig(level=getattr(logging, self.args.loglevel),
