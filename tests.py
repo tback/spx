@@ -1,11 +1,13 @@
 import datetime
 import unittest
 from unittest.mock import MagicMock, patch
+
 from spx import Smartplug
 
 
 class SmartplugTestCase(unittest.TestCase):
-    @patch('spx.Smartplug._get_timestamp', return_value=datetime.datetime(2015,9,17,14,28,1))
+    @patch('spx.Smartplug._get_timestamp',
+           return_value=datetime.datetime(2015, 9, 17, 14, 28, 1))
     @patch('requests.post', return_value=MagicMock())
     def test_get_usage(self, p, d):
         p.return_value.status_code = 200
@@ -24,15 +26,15 @@ class SmartplugTestCase(unittest.TestCase):
                 'week': 0.080,
             }
         )
-        p.assert_called_once()
-        self.assertEquals(p.call_args[0][0], 'http://admin:1234@240.0.0.1:10000/smartplug.cgi')
-        self.assertEquals(p.call_args[1]['data'], '<?xml version="1.0" encoding="UTF8"?><SMARTPLUG id="edimax"><CMD id="get"><NOW_POWER></NOW_POWER></CMD></SMARTPLUG>')
+        p.assert_called_once_with(
+            'http://admin:1234@240.0.0.1:10000/smartplug.cgi',
+            data='\n<?xml version="1.0" encoding="UTF8"?>\n<SMARTPLUG id="edimax">\n<CMD id="get">\n    <NOW_POWER>\n    </NOW_POWER>\n</CMD>\n</SMARTPLUG>'        )
+
 
     @patch('requests.post', return_value=MagicMock())
     def test_set_state(self, p):
         p.return_value.status_code = 200
-        p.return_value.content = '<?xml version="1.0" encoding="UTF8"?><SMARTPLUG id="edimax"></SMARTPLUG>'
-        self.fail('Invalid Response')
+        p.return_value.content = '<?xml version="1.0" encoding="UTF8"?><SMARTPLUG id="edimax">\n<CMD id="setup">OK</CMD>\n</SMARTPLUG>'
         plug = Smartplug('240.0.0.1')
 
         self.assertTrue(plug.set_state('on'))
@@ -40,5 +42,6 @@ class SmartplugTestCase(unittest.TestCase):
     @patch('requests.post', return_value=MagicMock())
     def test_get_state(self, p):
         p.return_value.status_code = 200
-        p.return_value.content = '<?xml version="1.0" encoding="UTF8"?><SMARTPLUG id="edimax"></SMARTPLUG>'
-        self.fail('Invalid Response')
+        p.return_value.content = '<?xml version="1.0" encoding="UTF8"?><SMARTPLUG id="edimax">\n<CMD id="get">\n    <Device.System.Power.State>OFF</Device.System.Power.State>\n</CMD>\n</SMARTPLUG>'
+        plug = Smartplug('240.0.0.1')
+        self.assertEquals(plug.get_state(), 'OFF')
