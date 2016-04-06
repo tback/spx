@@ -31,7 +31,9 @@ class SmartplugTestCase(unittest.TestCase):
         )
         p.assert_called_once_with(
             'http://admin:1234@240.0.0.1:10000/smartplug.cgi',
-            data='\n<?xml version="1.0" encoding="UTF8"?>\n<SMARTPLUG id="edimax">\n<CMD id="get">\n    <NOW_POWER>\n    </NOW_POWER>\n</CMD>\n</SMARTPLUG>'        )
+            data='\n<?xml version="1.0" encoding="UTF8"?>\n<SMARTPLUG id="edimax">\n<CMD id="get">\n    <NOW_POWER>\n    </NOW_POWER>\n</CMD>\n</SMARTPLUG>',
+            timeout=5
+        )
 
 
     @patch('requests.post', return_value=MagicMock())
