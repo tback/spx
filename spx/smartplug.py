@@ -74,7 +74,7 @@ class Smartplug(object):
 
     def _send_command(self, command):
         log.debug(command)
-        response = requests.post(self.url, data=command)
+        response = requests.post(self.url, data=command, timeout=5)
 
         if response.status_code != 200:
             raise SmartplugCommandFailed(response.status_code,

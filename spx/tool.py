@@ -49,8 +49,6 @@ class SPXTool(object):
                 time.sleep(3)
                 self.smartplug.on()
 
-
-
     def monitor(self, interval=None, control=None, control_threshould=None, control_timeframe=None):
         if interval is None:
             interval = self.DEFAULT_INTERVAL
