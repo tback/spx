@@ -1,6 +1,15 @@
 from distutils.core import setup
+
+import re
 import sys
 from setuptools import find_packages
+
+with open('spx/__init__.py', 'r') as f:
+    version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
+                        f.read(), re.MULTILINE).group(1)
+
+if not version:
+    raise RuntimeError('Cannot find version information')
 
 requires = [
     'apscheduler<4',
@@ -16,7 +25,7 @@ if sys.version_info < (3, 3):
 
 setup(
     name='spx',
-    version='0.2.0',
+    version=version,
     install_requires=requires,
     packages=find_packages(),
     entry_points={
