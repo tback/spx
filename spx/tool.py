@@ -34,14 +34,16 @@ class SPXTool(object):
 
     def run_monitor(self, control, interval, threshould, timeframe):
         usage = self.smartplug.get_usage()
-        print(self.FORMATS['default'].format(**usage), flush=True)
+        print(self.FORMATS['default'].format(**usage))
+        sys.stdout.flush()
         if control:
             if self.history is None:
                 self.history = deque(maxlen=int(timeframe/interval))
             self.history.append(usage)
             if (len(self.history) == self.history.maxlen
                 and max(self.history, key=lambda x: x['power'])['power'] < threshould):
-                print('POWERCYCLE', flush=True)
+                print('POWERCYCLE')
+                sys.stdout.flush()
                 self.history.clear()
                 self.smartplug.off()
                 time.sleep(3)
@@ -104,7 +106,10 @@ class SPXTool(object):
             'get_state', parents=[common_parser],
             help='Get state of Smartplug (on or off)'
         )
-        get_state_command.set_defaults(func=lambda: print(self.smartplug.get_state()))
+
+        def f():  # cannot use print in lambda on python2
+            print(self.smartplug.get_state())
+        get_state_command.set_defaults(func=f)
 
         set_state_command = commands.add_parser(
             'set_state', parents=[common_parser],
