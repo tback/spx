@@ -28,7 +28,7 @@ class Smartplug(object):
     DEFAULT_PASSWORD = '1234'
     DATETIME_FORMAT = '%Y%m%d%H%M%S'
 
-    URL = 'http://{p.username}:{p.password}@{p.host}:10000/smartplug.cgi'
+    URL = 'http://{p.host}:10000/smartplug.cgi'
 
     MESSAGE = textwrap.dedent('''
         <?xml version="1.0" encoding="UTF8"?>
@@ -74,7 +74,7 @@ class Smartplug(object):
 
     def _send_command(self, command):
         log.debug(command)
-        response = requests.post(self.url, data=command, timeout=5)
+        response = requests.post(self.url, data=command, auth=HTTPDigestAut h(),timeout=5)
 
         if response.status_code != 200:
             raise SmartplugCommandFailed(response.status_code,
