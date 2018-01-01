@@ -1,5 +1,8 @@
 import datetime
 import unittest
+
+from requests.auth import HTTPBasicAuth
+
 try:
     from mock import MagicMock, patch
 except ImportError:
@@ -30,9 +33,10 @@ class SmartplugTestCase(unittest.TestCase):
             }
         )
         p.assert_called_once_with(
-            'http://admin:1234@240.0.0.1:10000/smartplug.cgi',
+            'http://240.0.0.1:10000/smartplug.cgi',
             data='\n<?xml version="1.0" encoding="UTF8"?>\n<SMARTPLUG id="edimax">\n<CMD id="get">\n    <NOW_POWER>\n    </NOW_POWER>\n</CMD>\n</SMARTPLUG>',
-            timeout=5
+            timeout=5,
+            auth=HTTPBasicAuth('admin', '1234')
         )
 
 

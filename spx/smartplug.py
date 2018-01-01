@@ -6,6 +6,7 @@ import textwrap
 from xml.dom.minidom import parseString
 
 import requests
+from requests.auth import HTTPDigestAuth
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +75,8 @@ class Smartplug(object):
 
     def _send_command(self, command):
         log.debug(command)
-        response = requests.post(self.url, data=command, auth=HTTPDigestAut h(),timeout=5)
+        auth = HTTPDigestAuth(username=self.username, password=self.password)
+        response = requests.post(self.url, data=command,timeout=5, auth=auth)
 
         if response.status_code != 200:
             raise SmartplugCommandFailed(response.status_code,
